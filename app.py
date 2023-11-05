@@ -8,6 +8,12 @@ RELEVANTAI_API_URL = str(config("RELEVANTAI_API_URL"))
 app = Flask(__name__)
 
 
+@app.route("/")
+def home():
+    """Home page."""
+    return "everything is working"
+
+
 @app.route("/relay-email-webhook/", methods=["POST"])
 def relay_email_webhook_from_zapier():
     """Relay email webhook from Zapier to RelevanAI."""
@@ -22,4 +28,4 @@ def relay_email_webhook_from_zapier():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=config("PORT", default=5000))
