@@ -35,5 +35,23 @@ jobs:
           RELEVANTAI_PROJECT_ID: ${{ secrets.RELEVANTAI_PROJECT_ID }}
           RELEVANTAI_API_URL: ${{ secrets.RELEVANTAI_API_URL }}
         run: |
+          # Update the function code
           aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://function.zip --publish --region $AWS_REGION
-          aws lambda update-function-configuration --function-name $LAMBDA_FUNCTION_NAME --environment Variables="{RELEVANTAI_PROJECT_ID=$RELEVANTAI_PROJECT_ID,RELEVANTAI_API_URL=$RELEVANTAI_API_URL}" --region $AWS_REGION
+
+          # Wait loop for update-function-configuration to be ready (max 10 retries with 10 seconds delay)
+          MAX_RETRIES=10
+          DELAY_SECONDS=10
+          for ((i=1;i<=MAX_RETRIES;i++)); do
+            echo "Attempt $i to update function configuration..."
+            if aws lambda update-function-configuration --function-name $LAMBDA_FUNCTION_NAME --environment Variables="{RELEVANTAI_PROJECT_ID=$RELEVANTAI_PROJECT_ID,RELEVANTAI_API_URL=$RELEVANTAI_API_URL}" --region $AWS_REGION; then
+              echo "Update function configuration succeeded"
+              break
+            else
+              echo "Update function configuration failed, retrying in $DELAY_SECONDS seconds..."
+              sleep $DELAY_SECONDS
+            fi
+          done
+          if [ $i -gt $MAX_RETRIES ]; then
+            echo "Failed to update function configuration after $MAX_RETRIES attempts"
+            exit 1
+          fi
