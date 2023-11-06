@@ -30,10 +30,9 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: eu-south-1
           LAMBDA_FUNCTION_NAME: relay-webhook-zapier
           RELEVANTAI_PROJECT_ID: ${{ secrets.RELEVANTAI_PROJECT_ID }}
           RELEVANTAI_API_URL: ${{ secrets.RELEVANTAI_API_URL }}
         run: |
-          aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://function.zip --publish --region $AWS_REGION
+          aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://function.zip --publish --region eu-south-1
           aws lambda update-function-configuration --function-name $LAMBDA_FUNCTION_NAME --environment Variables="{RELEVANTAI_PROJECT_ID=$RELEVANTAI_PROJECT_ID,RELEVANTAI_API_URL=$RELEVANTAI_API_URL}"
