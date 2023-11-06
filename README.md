@@ -15,7 +15,7 @@ Ariadne is designed to assist startups by managing email communications and offe
 
 ## Getting Started
 
-The repository includes the code for the AWS Lambda function that you can deploy directly in your AWS environment. (I'll make a GH Action for continuous deployment soon.)
+The repository includes the code for the AWS Lambda function that you can deploy directly in your AWS environment.
 
 ## Setting up the Lambda Function
 
@@ -28,7 +28,7 @@ The repository includes the code for the AWS Lambda function that you can deploy
 
 ![Zapier configuration](assets/zapier-flow.png)
 
-### RelevantAI LLM prompt
+### RelevantAI LLM prompt (might be outdated)
 
 ![RelevantAI LLM prompt](assets/relevantai-llm-config.png)
 
