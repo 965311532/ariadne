@@ -21,37 +21,23 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install awscli
+          pip install -r requirements.txt --target ./packages
 
-      - name: Zip the function
+      - name: Zip the function and dependencies
         run: |
-          zip -r function.zip lambda_function.py
+          zip -r ./function.zip ./packages 
+          zip ./function.zip ./lambda_function.py
 
       - name: Deploy to AWS Lambda
         env:
+          AWS_REGION: eu-south-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: eu-south-1
           LAMBDA_FUNCTION_NAME: relay-webhook-zapier
           RELEVANTAI_PROJECT_ID: ${{ secrets.RELEVANTAI_PROJECT_ID }}
           RELEVANTAI_API_URL: ${{ secrets.RELEVANTAI_API_URL }}
         run: |
+          # Update env vars
+          aws lambda update-function-configuration --function-name $LAMBDA_FUNCTION_NAME --environment Variables="{RELEVANTAI_PROJECT_ID=$RELEVANTAI_PROJECT_ID,RELEVANTAI_API_URL=$RELEVANTAI_API_URL}" --region $AWS_REGION
           # Update the function code
           aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://function.zip --publish --region $AWS_REGION
-
-          # Wait loop for update-function-configuration to be ready (max 10 retries with 10 seconds delay)
-          MAX_RETRIES=10
-          DELAY_SECONDS=10
-          for ((i=1;i<=MAX_RETRIES;i++)); do
-            echo "Attempt $i to update function configuration..."
-            if aws lambda update-function-configuration --function-name $LAMBDA_FUNCTION_NAME --environment Variables="{RELEVANTAI_PROJECT_ID=$RELEVANTAI_PROJECT_ID,RELEVANTAI_API_URL=$RELEVANTAI_API_URL}" --region $AWS_REGION; then
-              echo "Update function configuration succeeded"
-              break
-            else
-              echo "Update function configuration failed, retrying in $DELAY_SECONDS seconds..."
-              sleep $DELAY_SECONDS
-            fi
-          done
-          if [ $i -gt $MAX_RETRIES ]; then
-            echo "Failed to update function configuration after $MAX_RETRIES attempts"
-            exit 1
-          fi
