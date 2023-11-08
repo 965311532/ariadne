@@ -41,7 +41,7 @@ After carefully reviewing the contents of this email, provide your reflection an
 def fill_prompt(email: dict) -> str:
     """Fills the Ariadne prompt with the email's data."""
     cc = email.get("cc", "none")  # If there is no cc, set it to "none"
-    return ARIADNE_PROMPT.format(**email, cc=cc)
+    return ARIADNE_PROMPT.format(**{**email, "cc": cc})
 
 
 class Ariadne:
@@ -52,6 +52,7 @@ class Ariadne:
         self.openai_thread = self._get_thread(ARIADNE_OPENAI_THREAD_ID)
         self.openai_assistant = self._get_synced_assistant(ARIADNE_OPENAI_ASSISTANT_ID)
         # Print the IDs in the logs for debugging
+        print(f"DEBUG: debug mode: {self.debug}")
         print(f"DEBUG: OpenAI Thread ID: {self.openai_thread.id}")
         print(f"DEBUG: OpenAI Assistant ID: {self.openai_assistant.id}")
 
@@ -129,13 +130,13 @@ class Ariadne:
 def lambda_handler(event, context):
     """Relay email webhook from Zapier to RelevanAI."""
 
-    # Istanciate the OpenAI client
+    # Istantiate the OpenAI client
     openai_client = OpenAI()
 
-    # Istanciate Ariadne
+    # Istantiate Ariadne
     ariadne = Ariadne(openai_client=openai_client, debug=event.get("debug", False))
 
-    # if the POSTed data (specifically the body) is empty, return an error
+    # If the POSTed data (specifically the body) is empty, return an error
     if not event.get("body"):
         return {"error": "No data provided."}
 
