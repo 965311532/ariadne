@@ -14,23 +14,22 @@ def lambda_handler(event, context):
 
     # Print the event in the logs for debugging
     print(f"DEBUG: Event: {event}")
-    params = json.loads(event)  # Parse the event
 
     # Istantiate the OpenAI client
     openai_client = OpenAI()
 
     # Istantiate Ariadne
-    ariadne = Ariadne(openai_client=openai_client, debug=params.get("debug", False))
+    ariadne = Ariadne(openai_client=openai_client, debug=event.get("debug", False))
 
     # Send the email to Ariadne
-    email = {**params, "from_": params.get("from")}  # Rename the "from" key to "from_"
+    email = {**event, "from_": event.get("from")}  # Rename the "from" key to "from_"
     answer = ariadne.get_reply(message=AriadnePrompt(email=email).build())
 
     # Print answer in the logs for debugging
     print(f"DEBUG: Answer: {answer}")
 
     # Remove empty and Ariadne's email address from the cc
-    cc = params.get("cc", "") + "," + params.get("to")
+    cc = event.get("cc", "") + "," + event.get("to")
     cc = ",".join([c for c in cc.split(",") if c != "" and c != ARIADNE_EMAIL_ADDRESS])
 
     # Call the zapier webhook to send the email
@@ -41,11 +40,11 @@ def lambda_handler(event, context):
         headers={"Content-Type": "application/json"},
         body=json.dumps(
             {
-                "thread_id": params.get("thread_id"),
+                "thread_id": event.get("thread_id"),
                 "from": ARIADNE_EMAIL_ADDRESS,
-                "to": params.get("from"),
+                "to": event.get("from"),
                 "cc": cc,
-                "subject": f"Re: {params.get('subject')}",
+                "subject": f"Re: {event.get('subject')}",
                 "body": answer,
             }
         ),
