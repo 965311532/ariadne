@@ -97,9 +97,17 @@ class Ariadne:
         If Ariadne is set up in debug mode, this will always create a new thread."""
         # If the thread ID is not provided, create it
         if not thread_id or self.debug:
-            return self.openai_client.beta.threads.create()
+            return self.openai_client.beta.threads.create(
+                messages=self._get_initial_messages()
+            )
         # If it is provided, get it
         return self.openai_client.beta.threads.retrieve(thread_id=thread_id)
+
+    def _get_initial_messages(self) -> list:
+        """Get the initial messages for the thread."""
+        # Parse the `emails.json` file (already in the format expected by the OpenAI API)
+        with open("emails.json", "r") as f:
+            return json.load(f)
 
     def get_reply(self, message: str) -> str:
         """Sends a message to the Assistant and returns the Assistant's response."""
