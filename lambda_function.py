@@ -133,8 +133,9 @@ def lambda_handler(event, context):
         params = {}
 
     # Send the email to Ariadne
+    email = {**params, "from_": params.get("from")}  # Rename the "from" key to "from_"
     answer = ariadne.send_message_to_assistant_thread(
-        message=ariadne.fill_prompt(email=params)
+        message=ariadne.fill_prompt(email=email)
     )
 
     # Return the answer
