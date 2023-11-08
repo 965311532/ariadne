@@ -25,9 +25,9 @@ jobs:
 
       - name: Zip the function and dependencies
         run: |
-          cd packages
-          zip -r ../function.zip .
-          cd ..
+          mkdir python
+          pip install -r requirements.txt -t python
+          zip -r9 function.zip .
           zip -g function.zip lambda_function.py
 
       - name: Deploy to AWS Lambda

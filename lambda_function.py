@@ -139,4 +139,4 @@ def lambda_handler(event, context):
     )
 
     # Return the answer
-    return json.dumps({"answer": answer})
+    return {"answer": json.dumps(answer)}
