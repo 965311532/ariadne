@@ -5,7 +5,7 @@ from openai import OpenAI
 from openai.types.beta import Assistant, Thread
 
 ARIADNE_OPENAI_THREAD_ID = None
-ARIADNE_OPENAI_ASSISTANT_ID = None
+ARIADNE_OPENAI_ASSISTANT_ID = "asst_fLeMjadWC8pfyYRLgHa42V4t"
 
 # The system prompt lays out the context and operational framework for Ariadne.
 ARIADNE_SYSTEM_PROMPT = """## WHO ARE YOU
@@ -51,6 +51,10 @@ class Ariadne:
             if ARIADNE_OPENAI_ASSISTANT_ID
             else self.create_openai_assistant_instance()
         )
+        # Debug
+        print("Ariadne initialized with:")
+        print(f"  - Thread ID: {self.openai_assistant_thread.id}")
+        print(f"  - Assistant ID: {self.openai_assistant_instance.id}")
 
     def fill_prompt(self, email: dict) -> str:
         """Fill in the Ariadne prompt with the provided email."""
