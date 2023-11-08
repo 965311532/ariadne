@@ -21,13 +21,18 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install awscli
-          pip install -r requirements.txt --target ./packages
+          pip install \
+          --platform manylinux2014_x86_64 \
+          --implementation cp \
+          --python-version 3.9 \
+          --only-binary=:all: --upgrade \
+          -r requirements.txt --target ./packages
 
       - name: Zip the function and dependencies
         run: |
-          mkdir python
-          pip install -r requirements.txt -t python
-          zip -r9 function.zip .
+          cd packages
+          zip -r9 ../function.zip .
+          cd ..
           zip -g function.zip lambda_function.py
 
       - name: Deploy to AWS Lambda
