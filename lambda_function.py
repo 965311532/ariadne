@@ -91,6 +91,8 @@ class Ariadne:
         self.openai_client.beta.threads.messages.create(
             thread_id=self.openai_assistant_thread.id, role="user", content=message
         )
+        print("Message sent to Ariadne:")
+        print(message)
         # 2. Start the assistant thread run
         run = self.openai_client.beta.threads.runs.create(
             thread_id=self.openai_assistant_thread.id,
@@ -108,6 +110,8 @@ class Ariadne:
             thread_id=self.openai_assistant_thread.id,
             limit=5,  # Only get the last few messages
         )
+        print("Thread last messages:")
+        print(messages.data)
         answer = ""
         for msg in messages.data:
             # If we get to a user message, we've reached the end of the assistant's response
@@ -131,6 +135,8 @@ def lambda_handler(event, context):
 
     # Attempt to load the event body as JSON
     try:
+        print("Event:")
+        print(event)
         params = json.loads(event.get("body", "{}"))
     except json.JSONDecodeError:
         # In case the body is not valid JSON, set params to an empty object
