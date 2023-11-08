@@ -133,17 +133,12 @@ def lambda_handler(event, context):
     # Istanciate Ariadne
     ariadne = Ariadne(openai_client=openai_client)
 
-    # Attempt to load the event body as JSON
-    try:
-        print("Event:")
-        print(event)
-        params = json.loads(event.get("body", "{}"))
-    except json.JSONDecodeError:
-        # In case the body is not valid JSON, set params to an empty object
-        params = {}
+    # if the POSTed data (specifically the body) is empty, return an error
+    if not event.get("body"):
+        return {"error": "No data provided."}
 
     # Send the email to Ariadne
-    email = {**params, "from_": params.get("from")}  # Rename the "from" key to "from_"
+    email = {**event, "from_": event.get("from")}  # Rename the "from" key to "from_"
     answer = ariadne.send_message_to_assistant_thread(
         message=ariadne.fill_prompt(email=email)
     )
