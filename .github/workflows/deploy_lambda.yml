@@ -28,7 +28,7 @@ jobs:
           cd packages
           zip -r9 ../function.zip .
           cd ..
-          zip -g function.zip lambda_function.py
+          zip -g function.zip lambda_function.py ariadne.py config.py
 
       - name: Deploy to AWS Lambda
         env:

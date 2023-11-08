@@ -5,9 +5,6 @@ import sys
 import urllib3
 from openai import OpenAI
 
-# Add the current directory to the path to enable absolute imports
-sys.path.append(os.path.join(os.path.dirname(__file__)))
-
 from ariadne import Ariadne, AriadnePrompt
 from config import ARIADNE_EMAIL_ADDRESS, ZAPIER_WEBHOOK_URL
 
