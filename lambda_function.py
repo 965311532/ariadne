@@ -1,7 +1,6 @@
 import json
-import os
-import sys
 
+import markdown
 import urllib3
 from openai import OpenAI
 
@@ -47,7 +46,7 @@ def lambda_handler(event, context):
                     "to": event.get("from"),
                     "cc": cc,
                     "subject": f"Re: {event.get('subject')}",
-                    "body": answer,
+                    "body": markdown.markdown(answer),  # Convert the answer to HTML
                 }
             ),
         )
