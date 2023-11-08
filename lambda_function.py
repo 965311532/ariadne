@@ -1,5 +1,6 @@
 import json
 import time
+from typing import Optional
 
 from openai import OpenAI
 from openai.types.beta import Assistant, Thread
@@ -23,7 +24,9 @@ When crafting your responses, ensure they reflect your deep understanding of TES
 2. Be proactive in your approach. If the information provided is insufficient, formulate targeted questions to elicit the necessary details that will enable you to offer informed and impactful guidance. 
 3. Evaluate each email's relevance to TESEO's objectives. If an email requires no response or action, simply acknowledge it with "NO_RESPONSE." Otherwise, respond with substantive advice or the needed acknowledgment. 
 4. As a recognized member of the founding team, maintain a tone of authority and partnership. Your responses should not only provide value but also reinforce your active role in shaping the company's trajectory. 
-5. Where possible, substantiate your advice with quantitative data. Avoid vague suggestions; instead, use precise figures and statistics to support your recommendations, underscoring their validity and enhancing the decisiveness of your advice."""
+5. Where possible, substantiate your advice with quantitative data. Avoid vague suggestions; instead, use precise figures and statistics to support your recommendations, underscoring their validity and enhancing the decisiveness of your advice.
+6. You have the ability to retrieve documents. Always try to retrieve relevant information before you answer, in order to have a more complete picture of the situation.
+"""
 
 # This is the template for the email prompt that Ariadne will receive.
 ARIADNE_PROMPT = """This is the latest email from {from_} to {to} (cc: {cc}) with subject "{subject}", on {date}:
@@ -35,83 +38,80 @@ ARIADNE_PROMPT = """This is the latest email from {from_} to {to} (cc: {cc}) wit
 After carefully reviewing the contents of this email, provide your reflection and advice below. If a response is not needed, indicate this with "NO_RESPONSE."""
 
 
+def fill_prompt(email: dict) -> str:
+    """Fills the Ariadne prompt with the email's data."""
+    cc = email.get("cc", "none")  # If there is no cc, set it to "none"
+    return ARIADNE_PROMPT.format(**email, cc=cc)
+
+
 class Ariadne:
     def __init__(self, openai_client: OpenAI):
-        self.prompt = ARIADNE_PROMPT.strip()
         self.openai_client = openai_client
         # If the thread a IDs is not provided, create it
-        self.openai_assistant_thread = (
-            self.get_openai_assistant_thread(ARIADNE_OPENAI_THREAD_ID)
-            if ARIADNE_OPENAI_THREAD_ID
-            else self.create_openai_assistant_thread()
-        )
-        # If the assistant ID is not provided, create it
-        self.openai_assistant_instance = (
-            self.get_openai_assistant_instance(ARIADNE_OPENAI_ASSISTANT_ID)
-            if ARIADNE_OPENAI_ASSISTANT_ID
-            else self.create_openai_assistant_instance()
-        )
+        self.openai_thread = self._get_thread(ARIADNE_OPENAI_THREAD_ID)
+        self.openai_assistant = self._get_synced_assistant(ARIADNE_OPENAI_ASSISTANT_ID)
         # Debug
-        print("Ariadne initialized with:")
-        print(f"  - Thread ID: {self.openai_assistant_thread.id}")
-        print(f"  - Assistant ID: {self.openai_assistant_instance.id}")
+        print(f"DEBUG: OpenAI Thread ID: {self.openai_thread.id}")
+        print(f"DEBUG: OpenAI Assistant ID: {self.openai_assistant.id}")
 
-    def fill_prompt(self, email: dict) -> str:
-        """Fill in the Ariadne prompt with the provided email."""
-        get_ = lambda key, default="": email.get(key, default)
-        return self.prompt.format(
-            date=get_("date"),
-            from_=get_("from"),
-            to=get_("to"),
-            cc=get_("cc", "none"),
-            subject=get_("subject"),
-            body=get_("body"),
+    def _get_synced_assistant(self, assistant_id: Optional[str] = None) -> Assistant:
+        """Get the OpenAI Assistant instance. If the ID is not provided, it will create it."""
+        # If the assistant ID is not provided, create it
+        if not assistant_id:
+            return self.openai_client.beta.assistants.create(
+                name="Ariadne AI",
+                instructions=ARIADNE_SYSTEM_PROMPT,
+                tools=[{"type": "retrieval"}],
+                model="gpt-4-1106-preview",
+            )
+
+        # If it is provided, get it and make sure the system prompt is up to date
+        assistant_instance = self.openai_client.beta.assistants.retrieve(
+            assistant_id=assistant_id
         )
+        if assistant_instance.instructions != ARIADNE_SYSTEM_PROMPT:
+            # Update the system prompt
+            self.openai_client.beta.assistants.update(
+                assistant_id=assistant_id, instructions=ARIADNE_SYSTEM_PROMPT
+            )
+        return assistant_instance
 
-    def create_openai_assistant_instance(self) -> Assistant:
-        return self.openai_client.beta.assistants.create(
-            name="Ariadne AI",
-            instructions=ARIADNE_SYSTEM_PROMPT,
-            tools=[{"type": "retrieval"}],
-            model="gpt-4-1106-preview",
-        )
-
-    def get_openai_assistant_instance(self, assistant_id) -> Assistant:
-        return self.openai_client.beta.assistants.retrieve(assistant_id=assistant_id)
-
-    def create_openai_assistant_thread(self) -> Thread:
-        return self.openai_client.beta.threads.create()
-
-    def get_openai_assistant_thread(self, thread_id) -> Thread:
+    def _get_thread(self, thread_id: Optional[str] = None) -> Thread:
+        """Get the OpenAI Thread instance. If the ID is not provided, it will create it."""
+        # If the thread ID is not provided, create it
+        if not thread_id:
+            return self.openai_client.beta.threads.create()
+        # If it is provided, get it
         return self.openai_client.beta.threads.retrieve(thread_id=thread_id)
 
-    def send_message_to_assistant_thread(self, message: str) -> str:
-        """Sends a message to the Assistant thread and returns the Assistant's response."""
+    def get_reply(self, message: str) -> str:
+        """Sends a message to the Assistant and returns the Assistant's response."""
         # 1. Send a new message to the assistant thread
         self.openai_client.beta.threads.messages.create(
-            thread_id=self.openai_assistant_thread.id, role="user", content=message
+            thread_id=self.openai_thread.id, role="user", content=message
         )
-        print("Message sent to Ariadne:")
-        print(message)
+
         # 2. Start the assistant thread run
         run = self.openai_client.beta.threads.runs.create(
-            thread_id=self.openai_assistant_thread.id,
-            assistant_id=self.openai_assistant_instance.id,
+            thread_id=self.openai_thread.id,
+            assistant_id=self.openai_assistant.id,
         )
+
         # 3. Wait for the assistant thread run to complete
         while run.status != "completed":
             run = self.openai_client.beta.threads.runs.retrieve(
-                thread_id=self.openai_assistant_thread.id, run_id=run.id
+                thread_id=self.openai_thread.id, run_id=run.id
             )
             time.sleep(1)  # Wait 1 second before checking again
 
         # 4. Get the assistant's response from the messages
         messages = self.openai_client.beta.threads.messages.list(
-            thread_id=self.openai_assistant_thread.id,
+            thread_id=self.openai_thread.id,
             limit=5,  # Only get the last few messages
         )
-        print("Thread last messages:")
-        print(messages.data)
+
+        # 5. Extract the assistant's response from the messages (it's not clear to me if the assistant
+        # can reply more than once, so to be sure i'll merge all the messages after the last user's message)
         answer = ""
         for msg in messages.data:
             # If we get to a user message, we've reached the end of the assistant's response
@@ -139,9 +139,7 @@ def lambda_handler(event, context):
 
     # Send the email to Ariadne
     email = {**event, "from_": event.get("from")}  # Rename the "from" key to "from_"
-    answer = ariadne.send_message_to_assistant_thread(
-        message=ariadne.fill_prompt(email=email)
-    )
+    answer = ariadne.get_reply(message=fill_prompt(email=email))
 
     # Return the answer
     return {"answer": json.dumps(answer)}
