@@ -1,6 +1,6 @@
 import json
 
-import requests
+import urllib3
 from openai import OpenAI
 
 from ariadne import Ariadne, AriadnePrompt
@@ -32,16 +32,21 @@ def lambda_handler(event, context):
     cc = ",".join([c for c in cc.split(",") if c != "" and c != ARIADNE_EMAIL_ADDRESS])
 
     # Call the zapier webhook to send the email
-    requests.post(
+    http = urllib3.PoolManager()
+    http.request(
+        method="POST",
         url=ZAPIER_WEBHOOK_URL,
-        json={
-            "thread_id": params.get("thread_id"),
-            "from": ARIADNE_EMAIL_ADDRESS,
-            "to": params.get("from"),
-            "cc": cc,
-            "subject": f"Re: {params.get('subject')}",
-            "body": answer,
-        },
+        headers={"Content-Type": "application/json"},
+        body=json.dumps(
+            {
+                "thread_id": params.get("thread_id"),
+                "from": ARIADNE_EMAIL_ADDRESS,
+                "to": params.get("from"),
+                "cc": cc,
+                "subject": f"Re: {params.get('subject')}",
+                "body": answer,
+            }
+        ),
     )
 
     return {
