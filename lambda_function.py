@@ -144,6 +144,9 @@ class Ariadne:
 def lambda_handler(event, context):
     """Relay email webhook from Zapier to RelevanAI."""
 
+    # Print the event in the logs for debugging
+    print(f"DEBUG: Event: {event}")
+
     # Istantiate the OpenAI client
     openai_client = OpenAI()
 
@@ -157,6 +160,9 @@ def lambda_handler(event, context):
     # Send the email to Ariadne
     email = {**event, "from_": event.get("from")}  # Rename the "from" key to "from_"
     answer = ariadne.get_reply(message=fill_prompt(email=email))
+
+    # Print answer in the logs for debugging so that if Zapier times out we can see the answer
+    print(f"DEBUG: Answer: {answer}")
 
     # Return the answer
     return {"answer": json.dumps(answer)}
