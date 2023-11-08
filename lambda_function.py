@@ -146,19 +146,16 @@ def lambda_handler(event, context):
 
     # Print the event in the logs for debugging
     print(f"DEBUG: Event: {event}")
+    params = json.loads(event.get("body"))
 
     # Istantiate the OpenAI client
     openai_client = OpenAI()
 
     # Istantiate Ariadne
-    ariadne = Ariadne(openai_client=openai_client, debug=event.get("debug", False))
-
-    # If the POSTed data (specifically the body) is empty, return an error
-    if not event.get("body"):
-        return {"error": "No data provided."}
+    ariadne = Ariadne(openai_client=openai_client, debug=params.get("debug", False))
 
     # Send the email to Ariadne
-    email = {**event, "from_": event.get("from")}  # Rename the "from" key to "from_"
+    email = {**params, "from_": params.get("from")}  # Rename the "from" key to "from_"
     answer = ariadne.get_reply(message=fill_prompt(email=email))
 
     # Print answer in the logs for debugging so that if Zapier times out we can see the answer
