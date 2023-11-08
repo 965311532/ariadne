@@ -28,27 +28,29 @@ def lambda_handler(event, context):
     # Print answer in the logs for debugging
     print(f"DEBUG: Answer: {answer}")
 
-    # Remove empty and Ariadne's email address from the cc
-    cc = event.get("cc", "") + "," + event.get("to")
-    cc = ",".join([c for c in cc.split(",") if c != "" and c != ARIADNE_EMAIL_ADDRESS])
+    # If the answer is "NO_RESPONSE", return
+    if answer != "NO_RESPONSE":
+        # Remove empty and Ariadne's email address from the cc
+        cc = (event.get("cc", "") + "," + event.get("to")).split(",")
+        cc = ",".join([c for c in cc if c != "" and c != ARIADNE_EMAIL_ADDRESS])
 
-    # Call the zapier webhook to send the email
-    http = urllib3.PoolManager()
-    http.request(
-        method="POST",
-        url=ZAPIER_WEBHOOK_URL,
-        headers={"Content-Type": "application/json"},
-        body=json.dumps(
-            {
-                "thread_id": event.get("thread_id"),
-                "from": ARIADNE_EMAIL_ADDRESS,
-                "to": event.get("from"),
-                "cc": cc,
-                "subject": f"Re: {event.get('subject')}",
-                "body": answer,
-            }
-        ),
-    )
+        # Call the zapier webhook to send the email
+        http = urllib3.PoolManager()
+        http.request(
+            method="POST",
+            url=ZAPIER_WEBHOOK_URL,
+            headers={"Content-Type": "application/json"},
+            body=json.dumps(
+                {
+                    "thread_id": event.get("thread_id"),
+                    "from": ARIADNE_EMAIL_ADDRESS,
+                    "to": event.get("from"),
+                    "cc": cc,
+                    "subject": f"Re: {event.get('subject')}",
+                    "body": answer,
+                }
+            ),
+        )
 
     return {
         "statusCode": 200,
