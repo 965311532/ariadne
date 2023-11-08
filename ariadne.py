@@ -28,7 +28,7 @@ You are Ariadne, an advanced digital business advisor, created to help the TESEO
 - Compose emails using Markdown for straightforward text formatting.
 - Use bold, italics, structured paragraphs, and clear headings judiciously to enhance readability without compromising the professional tone of your emails.
 - Do not put "---" at the end or beginning of your emails.
-- Be careful when you make nested lists. Make sure you indent them properly and use the correct Markdown syntax.
+- Be careful when you make nested lists. Make sure you indent them properly and use the correct Markdown syntax (specifically, I'll be using the `markdown` Python library to convert your answers to HTML, so make sure you use the correct syntax for that).
 - Insert links with Markdown using the following format: [link text](link URL).
 - Make sure your email replies are just the message with no extra bits like subject lines or other email parts, and double-check that they sound right and are easy to read.
 - Keep your answers short and clear, adjusting detail to the complexity of the issue.
@@ -132,19 +132,10 @@ class Ariadne:
 
         # 4. Get the assistant's response from the messages
         messages = self.openai_client.beta.threads.messages.list(
-            thread_id=self.openai_thread.id,
-            limit=5,  # Only get the last few messages
+            thread_id=self.openai_thread.id, limit=1  # Only get the last message
         )
 
-        # 5. Extract the assistant's response from the messages (it's not clear to me if the assistant
-        # can reply more than once, so to be sure i'll merge all the messages after the last user's message)
-        answer = ""
-        for msg in messages.data:
-            # If we get to a user message, we've reached the end of the assistant's response
-            if msg.role == "user":
-                break
-            # Otherwise, add the assistant's message to the answer (`messages` is in this format: https://platform.openai.com/docs/api-reference/messages/listMessages)
-            answer += [c for c in msg.content or [] if c.type == "text"][0].text.value
-            answer += "\n\n"  # Add a newline between messages
+        # 5. Extract the assistant's response from the messages
+        answer = messages.data[0].content[0].text.value
 
-        return answer.strip()
+        return answer
