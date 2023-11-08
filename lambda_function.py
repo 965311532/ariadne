@@ -2,11 +2,15 @@ import json
 import time
 from typing import Optional
 
+import requests
 from openai import OpenAI
 from openai.types.beta import Assistant, Thread
 
+ZAPIER_WEBHOOK_URL = "https://hooks.zapier.com/hooks/catch/16957526/3zs1hxj/"
+
 ARIADNE_OPENAI_THREAD_ID = None
 ARIADNE_OPENAI_ASSISTANT_ID = "asst_fLeMjadWC8pfyYRLgHa42V4t"
+ARIADNE_EMAIL_ADDRESS = "ariadne@teseoembroidery.com"
 
 # The system prompt lays out the context and operational framework for Ariadne.
 ARIADNE_SYSTEM_PROMPT = """### WHO ARE YOU
@@ -158,8 +162,27 @@ def lambda_handler(event, context):
     email = {**params, "from_": params.get("from")}  # Rename the "from" key to "from_"
     answer = ariadne.get_reply(message=fill_prompt(email=email))
 
-    # Print answer in the logs for debugging so that if Zapier times out we can see the answer
+    # Print answer in the logs for debugging
     print(f"DEBUG: Answer: {answer}")
 
-    # Return the answer
-    return {"answer": json.dumps(answer)}
+    # Remove empty and Ariadne's email address from the cc
+    cc = params.get("cc", "") + "," + params.get("to")
+    cc = ",".join([c for c in cc.split(",") if c != "" and c != ARIADNE_EMAIL_ADDRESS])
+
+    # Call the zapier webhook to send the email
+    requests.post(
+        url=ZAPIER_WEBHOOK_URL,
+        json={
+            "thread_id": params.get("thread_id"),
+            "from": ARIADNE_EMAIL_ADDRESS,
+            "to": params.get("from"),
+            "cc": cc,
+            "subject": f"Re: {params.get('subject')}",
+            "body": answer,
+        },
+    )
+
+    return {
+        "statusCode": 200,
+        "body": json.dumps({"message": "success"}),
+    }
