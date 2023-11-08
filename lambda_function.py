@@ -45,12 +45,13 @@ def fill_prompt(email: dict) -> str:
 
 
 class Ariadne:
-    def __init__(self, openai_client: OpenAI):
+    def __init__(self, openai_client: OpenAI, debug=False):
         self.openai_client = openai_client
+        self.debug = debug
         # If the thread a IDs is not provided, create it
         self.openai_thread = self._get_thread(ARIADNE_OPENAI_THREAD_ID)
         self.openai_assistant = self._get_synced_assistant(ARIADNE_OPENAI_ASSISTANT_ID)
-        # Debug
+        # Print the IDs in the logs for debugging
         print(f"DEBUG: OpenAI Thread ID: {self.openai_thread.id}")
         print(f"DEBUG: OpenAI Assistant ID: {self.openai_assistant.id}")
 
@@ -77,9 +78,10 @@ class Ariadne:
         return assistant_instance
 
     def _get_thread(self, thread_id: Optional[str] = None) -> Thread:
-        """Get the OpenAI Thread instance. If the ID is not provided, it will create it."""
+        """Get the OpenAI Thread instance. If the ID is not provided, it will create it.
+        If Ariadne is set up in debug mode, this will always create a new thread."""
         # If the thread ID is not provided, create it
-        if not thread_id:
+        if not thread_id or self.debug:
             return self.openai_client.beta.threads.create()
         # If it is provided, get it
         return self.openai_client.beta.threads.retrieve(thread_id=thread_id)
@@ -131,7 +133,7 @@ def lambda_handler(event, context):
     openai_client = OpenAI()
 
     # Istanciate Ariadne
-    ariadne = Ariadne(openai_client=openai_client)
+    ariadne = Ariadne(openai_client=openai_client, debug=event.get("debug", False))
 
     # if the POSTed data (specifically the body) is empty, return an error
     if not event.get("body"):
