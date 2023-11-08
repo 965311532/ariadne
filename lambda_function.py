@@ -150,7 +150,7 @@ def lambda_handler(event, context):
 
     # Print the event in the logs for debugging
     print(f"DEBUG: Event: {event}")
-    params = json.loads(event.get("body"))
+    params = json.loads(event)  # Parse the event
 
     # Istantiate the OpenAI client
     openai_client = OpenAI()
